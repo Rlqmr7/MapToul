@@ -70,6 +70,18 @@ void MapEdit::Update()
 	drawAreaRect_ = { LEFT_MARGIN + gridX * MAP_IMAGE_SIZE, TOP_MARGIN + gridY * MAP_IMAGE_SIZE,
 		MAP_IMAGE_SIZE, MAP_IMAGE_SIZE };
 
+
+	// Dキーで複数削除モードON
+	if (Input::IsKeyDown(KEY_INPUT_D)) {
+		multiDeleteMode_ = true;
+		selectedForDelete_.clear();
+	}
+	// Fキーで通常モード（複数削除モードOFF）
+	if (Input::IsKeyDown(KEY_INPUT_F)) {
+		multiDeleteMode_ = false;
+		selectedForDelete_.clear();
+	}
+
 	if (multiDeleteMode_) {
 		if (Input::IsButtonDown(MOUSE_INPUT_LEFT)) {
 			Point p{ gridX, gridY };
@@ -110,12 +122,6 @@ void MapEdit::Update()
 	if (Input::IsKeyDown(KEY_INPUT_L))
 	{
 		LoadMapData();
-	}
-
-	// Dキーで複数削除モード切替
-	if (Input::IsKeyDown(KEY_INPUT_D)) {
-		multiDeleteMode_ = !multiDeleteMode_;
-		selectedForDelete_.clear();
 	}
 
 }
