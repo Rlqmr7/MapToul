@@ -32,4 +32,13 @@ public:
 	int selectedIndex_;//選択したマップチップのインデックス
 	bool isHold_;
 	Point ScrollOffset_; //スクロールオフセット
+
+	// 画像分割・拡大・スクロール用
+	int bgFullHandle_;         // 元画像
+	int bgLeftHandle_;         // 左半分
+	int bgRightHandle_;        // 右半分
+	int bgWidth_, bgHeight_;   // 元画像サイズ
+	float chipScale_ = 2.0f;   // 拡大率
+	int scrollY_ = 0; // 縦スクロール量
+	int scrollX_ = 0; // 横スクロール量
 };

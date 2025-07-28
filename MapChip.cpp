@@ -75,49 +75,67 @@ Point MapChip::ScreenToChipIndex(const Point& mouse) const
 void MapChip::Update()
 {
 
-	Point mousePos;
-	if (GetMousePoint(&mousePos.x, &mousePos.y) == -1) return;
+	 // スクロール操作（上下キーでY、左右キーでX）
+    if (Input::IsKeyDown(KEY_INPUT_UP))    scrollY_ -= cfg_.TILE_PIX_SIZE;
+    if (Input::IsKeyDown(KEY_INPUT_DOWN))  scrollY_ += cfg_.TILE_PIX_SIZE;
+    if (Input::IsKeyDown(KEY_INPUT_LEFT))  scrollX_ -= cfg_.TILE_PIX_SIZE;
+    if (Input::IsKeyDown(KEY_INPUT_RIGHT)) scrollX_ += cfg_.TILE_PIX_SIZE;
 
+    // スクロール範囲制限
+    int maxScrollY = std::max(0, cfg_.TILE_PIX_SIZE * cfg_.TILES_Y - cfg_.MAPCHIP_WIN_HEIGHT);
+    int maxScrollX = std::max(0, cfg_.TILE_PIX_SIZE * cfg_.TILES_X - cfg_.MAPCHIP_WIN_WIDTH);
+    if (scrollY_ < 0) scrollY_ = 0;
+    if (scrollY_ > maxScrollY) scrollY_ = maxScrollY;
+    if (scrollX_ < 0) scrollX_ = 0;
+    if (scrollX_ > maxScrollX) scrollX_ = maxScrollX;
 
-	isInMapChipArea_ = IsInChipArea(mousePos);
+    // --- 既存の選択処理 ---
+    Point mousePos;
+    if (GetMousePoint(&mousePos.x, &mousePos.y) == -1) return;
 
+    isInMapChipArea_ = IsInChipArea(mousePos);
 
-	if (isInMapChipArea_) {
-		selected_ = ScreenToChipIndex(mousePos);
-		int gx = selected_.x;
-		int gy = selected_.y;
-		int index = gy * cfg_.TILES_X + gx;
-		if (index >= 0 && index < bgHandle.size() && Input::IsButtonDown(MOUSE_INPUT_LEFT)) {
-			selectedIndex_ = bgHandle[index];
-			isHold_ = true;
-		}
-	}
-	else {
-		isInMapChipArea_ = false;
-	}
+    if (isInMapChipArea_) {
+        // スクロール分だけ座標補正
+        Point scrolledMouse = mousePos;
+        scrolledMouse.x += scrollX_;
+        scrolledMouse.y += scrollY_;
+        selected_ = ScreenToChipIndex(scrolledMouse);
 
-
+        int gx = selected_.x;
+        int gy = selected_.y;
+        int index = gy * cfg_.TILES_X + gx;
+        if (index >= 0 && index < bgHandle.size() && Input::IsButtonDown(MOUSE_INPUT_LEFT)) {
+            selectedIndex_ = bgHandle[index];
+            isHold_ = true;
+        }
+    } else {
+        isInMapChipArea_ = false;
+    }
 }
 
 void MapChip::Draw()
 {
-    // 画面右端に表示
     const int originX = Screen::WIDTH - cfg_.MAPCHIP_WIN_WIDTH;
     const int originY = 0;
 
     for (int y = 0; y < cfg_.TILES_Y; y++) {
         for (int x = 0; x < cfg_.TILES_X; x++) {
             int index = y * cfg_.TILES_X + x;
-            DrawGraph(originX + x * cfg_.TILE_PIX_SIZE,
-                      originY + y * cfg_.TILE_PIX_SIZE,
-                      bgHandle[index], TRUE);
+            int drawX = originX + x * cfg_.TILE_PIX_SIZE - scrollX_;
+            int drawY = originY + y * cfg_.TILE_PIX_SIZE - scrollY_;
+            // ウィンドウ内のみ描画
+            if (drawX + cfg_.TILE_PIX_SIZE > originX && drawX < originX + cfg_.MAPCHIP_WIN_WIDTH &&
+                drawY + cfg_.TILE_PIX_SIZE > originY && drawY < originY + cfg_.MAPCHIP_WIN_HEIGHT) {
+                DrawGraph(drawX, drawY, bgHandle[index], TRUE);
+            }
         }
     }
 
     // 選択中チップのハイライト
     if (isInMapChipArea_) {
-        int x = originX + selected_.x * cfg_.TILE_PIX_SIZE;
-        int y = selected_.y * cfg_.TILE_PIX_SIZE;
+        int x = originX + selected_.x * cfg_.TILE_PIX_SIZE - scrollX_;
+        int y = selected_.y * cfg_.TILE_PIX_SIZE - scrollY_;
         int size = cfg_.TILE_PIX_SIZE;
         SetDrawBlendMode(DX_BLENDMODE_ALPHA, 100);
         DrawBox(x + 1, y - 1, x + size - 1, y + size + 1, GetColor(255, 255, 0), TRUE);
@@ -125,7 +143,7 @@ void MapChip::Draw()
         DrawBox(x, y, x + size, y + size, GetColor(255, 0, 0), FALSE);
     }
 
-    // ホールド中チップの描画
+    // ホールド中チップの描画（変更なし）
     if (isHold_) {
         Point mousePos;
         if (GetMousePoint(&mousePos.x, &mousePos.y) != -1) {
