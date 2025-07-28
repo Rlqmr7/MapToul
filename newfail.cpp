@@ -1,0 +1,6 @@
+#include <Dxlib.h>
+
+void Function() {
+	//âΩÇ‡ÇµÇ»Ç¢
+	//Ç»ÇÒÇ©èëÇ≠
+}
